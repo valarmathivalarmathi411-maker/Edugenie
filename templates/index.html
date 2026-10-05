@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EduGenie — AI Powered Learning Assistant</title>
+  <meta name="description" content="EduGenie is a lightweight AI-powered educational assistant powered by Google Gemini and LaMini-Flan-T5." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Marked.js for rendering markdown output -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Header / Navbar -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="brand-logo">
+          <span class="genie-icon">✨</span>
+        </div>
+        <div class="brand-text">
+          <h1>EduGenie</h1>
+          <p class="tagline">Google Gemini Powered Learning Assistant</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        {% if gemini_ready %}
+        <span class="status-badge status-live">
+          <span class="pulse-dot"></span> Gemini AI Active
+        </span>
+        {% else %}
+        <span class="status-badge status-demo" title="Add GEMINI_API_KEY in .env for live Gemini output">
+          <span class="info-dot">ℹ️</span> Offline Demo Mode
+        </span>
+        {% endif %}
+        <span class="model-tag">{{ gemini_model }}</span>
+      </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="main-container">
+      <!-- Hero Intro -->
+      <section class="hero-section">
+        <h2>Your Personal AI Study & Learning Companion</h2>
+        <p class="hero-desc">
+          Simplify complex concepts, ask academic questions, generate interactive quizzes, summarize revision notes, and build step-by-step career roadmaps.
+        </p>
+      </section>
+
+      <!-- Interactive Studio Card -->
+      <div class="studio-card">
+        <!-- Task Selection Navigation -->
+        <div class="task-selector-wrapper">
+          <label for="taskDropdown" class="section-label">Select Learning Activity:</label>
+          <div class="task-tabs" id="taskTabs">
+            <button type="button" class="tab-btn active" data-task="qa">
+              <span class="tab-icon">❓</span>
+              <span class="tab-text">Q&amp;A</span>
+            </button>
+            <button type="button" class="tab-btn" data-task="explain">
+              <span class="tab-icon">💡</span>
+              <span class="tab-text">Explain Concept</span>
+            </button>
+            <button type="button" class="tab-btn" data-task="quiz">
+              <span class="tab-icon">📝</span>
+              <span class="tab-text">Generate Quiz</span>
+            </button>
+            <button type="button" class="tab-btn" data-task="summarize">
+              <span class="tab-icon">📄</span>
+              <span class="tab-text">Summarize Text</span>
+            </button>
+            <button type="button" class="tab-btn" data-task="recommend_path">
+              <span class="tab-icon">🗺️</span>
+              <span class="tab-text">Learning Path</span>
+            </button>
+          </div>
+
+          <!-- Native Dropdown for Accessible/Mobile Fallback -->
+          <div class="mobile-dropdown-container">
+            <select id="taskDropdown" class="task-select">
+              <option value="qa" selected>❓ Question Answering (QnA)</option>
+              <option value="explain">💡 Concept Explanation</option>
+              <option value="quiz">📝 Quiz Generation (3 MCQs)</option>
+              <option value="summarize">📄 Passage Summarization</option>
+              <option value="recommend_path">🗺️ Personalized Learning Path</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Quick Sample Prompts -->
+        <div class="sample-chips-bar">
+          <span class="chips-label">Try Scenarios:</span>
+          <div class="chips-list">
+            <button type="button" class="chip" data-task="qa" data-text="Which is the largest ocean?">
+              🌊 Largest Ocean
+            </button>
+            <button type="button" class="chip" data-task="quiz" data-text="The Pythagoras Theorem states that in a right-angled triangle, the square of the hypotenuse is equal to the sum of the squares of the other two sides.">
+              📐 Pythagoras Quiz
+            </button>
+            <button type="button" class="chip" data-task="recommend_path" data-text="Structured Query Language (SQL)">
+              📊 SQL Roadmap
+            </button>
+            <button type="button" class="chip" data-task="explain" data-text="Quantum Computing and Superposition">
+              ⚛️ Quantum Computing
+            </button>
+            <button type="button" class="chip" data-task="summarize" data-text="Photosynthesis is the biological process by which green plants and certain other organisms transform light energy into chemical energy. During photosynthesis in green plants, light energy is captured and used to convert water, carbon dioxide, and minerals into oxygen and energy-rich organic compounds like glucose. Without this process, life on Earth as we know it would not exist.">
+              🌿 Photosynthesis Summary
+            </button>
+          </div>
+        </div>
+
+        <!-- Main Form -->
+        <form id="edugenieForm" class="input-form">
+          <div class="form-group">
+            <div class="input-header">
+              <label for="inputText" id="inputLabel">Ask your question:</label>
+              <span class="char-count" id="charCounter">0 characters</span>
+            </div>
+            <textarea
+              id="inputText"
+              name="inputText"
+              rows="5"
+              placeholder="e.g. Which is the largest ocean?"
+              required
+            ></textarea>
+          </div>
+
+          <!-- Secondary Optional Context (for QnA or Passage) -->
+          <div class="form-group" id="contextGroup" style="display: none;">
+            <label for="contextText" class="sub-label">Supporting Passage / Reference Context (Optional):</label>
+            <textarea
+              id="contextText"
+              rows="3"
+              placeholder="Paste any context material here..."
+            ></textarea>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="action-bar">
+            <button type="button" id="clearBtn" class="btn btn-secondary">
+              Clear
+            </button>
+            <button type="submit" id="submitBtn" class="btn btn-primary">
+              <span class="btn-icon">⚡</span>
+              <span class="btn-text">Ask EduGenie</span>
+              <span class="spinner" style="display: none;"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Results Display Section -->
+      <section id="resultSection" class="result-section" style="display: none;">
+        <div class="result-card">
+          <!-- Result Header -->
+          <div class="result-header">
+            <div class="result-title-meta">
+              <span class="result-badge" id="resultTypeBadge">Output</span>
+              <h3 id="resultTitle">Generated Learning Content</h3>
+            </div>
+            <div class="result-controls">
+              <span class="engine-badge" id="engineBadge">Google Gemini 1.5 Pro</span>
+              <button type="button" id="copyResultBtn" class="btn-icon-only" title="Copy to Clipboard">
+                📋 Copy
+              </button>
+              <button type="button" id="speakResultBtn" class="btn-icon-only" title="Listen (Text-to-Speech)">
+                🔊 Listen
+              </button>
+            </div>
+          </div>
+
+          <!-- Content Box for Markdown / General Output -->
+          <div id="generalResultContainer" class="markdown-body"></div>
+
+          <!-- Interactive Quiz Component (For Quiz Task) -->
+          <div id="quizContainer" class="quiz-container" style="display: none;">
+            <div class="quiz-header-bar">
+              <div class="quiz-score-tracker">
+                <span class="score-label">Interactive Quiz:</span>
+                <span class="score-pill" id="quizScorePill">Score: 0 / 3</span>
+              </div>
+              <button type="button" id="retryQuizBtn" class="btn btn-secondary btn-sm">
+                🔄 Reset Answers
+              </button>
+            </div>
+            <div id="quizQuestionsList" class="quiz-questions-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="footer-content">
+        <p>EduGenie © 2025 • Designed for students of all academic levels.</p>
+        <p class="footer-sub">Powered by Google Gemini 1.5 Pro &amp; LaMini-Flan-T5 • Built with FastAPI</p>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>
